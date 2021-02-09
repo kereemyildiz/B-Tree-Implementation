@@ -8,7 +8,6 @@
 #include <string>
 using namespace std;
 
-// A BTree node
 
 char op;
 
@@ -62,114 +61,76 @@ bool Info::operator==(Info temp) {
     else
         throw "Invalid key identifier";
 }
-class Node
+class B_Tree_Node
 {
 
 public:
     Info *keys; // An array of keys
     int t;     // Minimum degree (defines the range for number of keys)
-    Node **C; // An array of child pointers
-    int n;     // Current number of keys
+    B_Tree_Node **chs; // An array of child pointers
+    int key_num;     // Current number of keys
     bool leaf; // Is true when node is leaf. Otherwise false
-    Node(int _t, bool _leaf); // Constructor
+    B_Tree_Node(int t, bool leaf); // Constructor
 
 
-    void insertNonFull(Info k);
+    void insert2(Info k); // when node is not full we call this func
 
+    void split(int i, B_Tree_Node *y);
 
-    void splitChild(int i, Node *y);
-
- 
     void traverse();
 
-    
-    Node *search(Info k); 
-
-s
 };
 
-// A BTree
+
 class BTree
 {
 
 public:
-    Node *root; // Pointer to root node
+    B_Tree_Node *root; // Pointer to root node
     int t; // Minimum degree
-    // Constructor (Initializes tree as empty)
-    BTree(int _t)
-    { root = NULL; t = _t; }
 
-    // function to traverse the tree
+    BTree(int t)
+    { root = NULL; this->t = t; }
+
+
     void traverse()
     { if (root != NULL) root->traverse(); }
 
-    // function to search a key in this tree
-    Node* search(Info k)
-    { return (root == NULL)? NULL : root->search(k); }
 
-    // The main function that inserts a new key in this B-Tree
+
     void insert(Info k);
 };
 
-// Constructor for BTreeNode class
-Node::Node(int t1, bool leaf1) :n(0)
+
+B_Tree_Node::B_Tree_Node(int t1, bool leaf1) : key_num(0)
 {
-    // Copy the given minimum degree and leaf property
+
     t = t1;
     leaf = leaf1;
 
-    // Allocate memory for maximum number of possible keys
-    // and child pointers
     keys = new Info[2*t-1];
-    C = new Node *[2*t];
+    chs = new B_Tree_Node *[2*t];
 
-    // Initialize the number of keys as 0
+    
 
 }
 
-// Function to traverse all nodes in a subtree rooted with this node
-void Node::traverse()
+void B_Tree_Node::traverse()
 {
-    // There are n keys and n+1 children, traverse through n keys
-    // and first n children
-    for (int i = 0; i < n; i++)
+
+    for (int i = 0; i < key_num; i++)
     {
         cout << "(" << keys[i].x << ","<< keys[i].y << "," << keys[i].z <<")";
-
-        // If this is not leaf, then before printing key[i],
-        // traverse the subtree rooted with child C[i].
     }
 
     // Print the subtree rooted with last child
     if (leaf == false) {
-        for (int i = 0; i < n+1; i++){
+        for (int i = 0; i < key_num+1; i++){
             cout << endl;
-            C[i]->traverse();
+            chs[i]->traverse();
         }
     }
 }
-
-// Function to search key k in subtree rooted with this node
-Node *Node::search(Info k)
-{
-    // Find the first key greater than or equal to k
-    int i = 0;
-    while (i < n && k > keys[i])
-        i++;
-
-    // If the found key is equal to k, return this node
-    if (keys[i] == k)
-        return this;
-
-    // If key is not found here and this is a leaf node
-    if (leaf == true)
-        return NULL;
-
-    // Go to the appropriate child
-    return C[i]->search(k);
-}
-
-// The main function that inserts a new key in this B-Tree
 
 /*
 
@@ -187,46 +148,65 @@ B-TREE-INSERT(T,k)
 */
 void BTree::insert(Info k)
 {
-    // If tree is empty
+
     if (root == NULL)
     {
-        // Allocate memory for root
-        root = new Node(t, true);
-        root->keys[0] = k; // Insert key
-        root->n = 1; // Update number of keys in root
+
+        root = new B_Tree_Node(t, true);
+        root->keys[0] = k;
+        root->key_num = 1; 
     }
     else // If tree is not empty
     {
 
-        if (root->n == 2*t-1)
+        if (root->key_num == 2*t-1)
         {
-            Node *newnode = new Node(t, false);
+            B_Tree_Node *newnode = new B_Tree_Node(t, false);
 
 
-            newnode->C[0] = root;
+            newnode->chs[0] = root;
             newnode->leaf = false;
-            newnode->n = 0;
+            newnode->key_num = 0;
 
 
-            newnode->splitChild(0, root);
+            newnode->split(0, root);
 
             int i = 0;
             if (newnode->keys[0] < k)
                 i++;
-            newnode->C[i]->insertNonFull(k);
+            newnode->chs[i]->insert2(k);
 
 
             root = newnode;
         }
         else // If root is not full, call insertNonFull for root
-            root->insertNonFull(k);
+            root->insert2(k);
     }
 }
 
-
-void Node::insertNonFull(Info k)
+/*
+B-TREE-INSERT-NONFULL(x,k)  
+1   i ← n[x]  
+2   if leaf[x]  
+3       then while i≥ 1 and k < keyi[x]  
+4                      do keyi+1[x]← keyi[x]  
+5                            i ← i -1  
+6                keyi+1[x] ← k 
+7                n[x]←n[x]+1   
+8                DISK-WRITE(x)  
+9       else while i ≥ 1 and k < keyi[x]
+10                     do i ← i - 1 
+11                i ← i + 1 
+12               DISK-READ(ci[x]) 
+13               if n[ci[x]] = 2t-1 
+14                    then B-TREE-SPLIT-CHILD(x,i,ci[x]) 
+15                         if k > keyi[x]  
+16                             then i ←i + 1 
+17               B-TREE-INSERT-NONFULL(ci[x],k)
+*/
+void B_Tree_Node::insert2(Info k)
 {
-    int i = n-1;
+    int i = key_num-1;
 
     if (leaf == true)
     {
@@ -238,7 +218,7 @@ void Node::insertNonFull(Info k)
         }
 
         keys[i+1] = k;
-        n = n+1;
+        key_num = key_num+1;
     }
     else // If this node is not leaf
     {
@@ -246,57 +226,77 @@ void Node::insertNonFull(Info k)
             i--;
 
         i++;
-        if (C[i]->n == 2*t-1)
+        if (chs[i]->key_num == 2*t-1)
         {
-            splitChild(i, C[i]);
+            split(i, chs[i]);
 
             if (keys[i] < k)
                 i++;
         }
-        C[i]->insertNonFull(k);
+        chs[i]->insert2(k);
     }
 }
-void Node::splitChild(int i, Node *y)
+
+/*
+B-TREE-SPLIT-CHILD(x,i,y)  1z←Allocate_Node 
+2   leaf[z] ← leaf[y]  
+3   n[z] ← t - 1  
+4   for j ← 1 to t - 1  
+5        dokeyj[z]← keyj+t[y]  
+6   if not leaf[y]  
+7        then for j ← 1 to t  
+8              do cj[z] ← cj+t[y] 
+9   n[y]← t-1  
+10  for j← n[x]+1 downto i+1 
+11        do cj+1[x] ← cj[x] 
+12   ci+1[x] ← z 
+13   for j ←n[x] downto i 
+14        do keyj+1[x] ← keyj[x] 
+15   keyi[x] ← keyt[y] 
+16   n[x]←n[x]+1
+*/
+void B_Tree_Node::split(int i, B_Tree_Node *fullnode)
 {
 
-    Node *z = new Node(y->t, y->leaf);
-    z->n = t - 1;
+    B_Tree_Node *z = new B_Tree_Node(fullnode->t, fullnode->leaf);
+    z->key_num = t - 1;
 
     int j = 0;
     while(j < t-1){
-        z->keys[j] = y->keys[j+t];
+        z->keys[j] = fullnode->keys[t+j];
         j++;
     }
 
 
-    if (y->leaf == false)
+    if (fullnode->leaf != true)
     {
         for (int j = 0; j < t; j++)
-            z->C[j] = y->C[j+t];
+            z->chs[j] = fullnode->chs[j+t];
     }
 
 
-    y->n = t - 1;
+    fullnode->key_num = t - 1;
 
 
-    for (int j = n; j > i; j--)
-        C[j+1] = C[j];
+    for (int j = key_num; j > i; j--)
+        chs[j+1] = chs[j];
 
     
-    C[i+1] = z;
+    chs[i+1] = z;
 
-    for (int j = n-1; j > i-1; j--)
+    for (int j = key_num-1; j > i-1; j--)
         keys[j+1] = keys[j];
 
-    keys[i] = y->keys[t-1];
+    keys[i] = fullnode->keys[t-1];
 
-    n = n + 1;
+    key_num = key_num + 1;
 }
 
 int main()
 {
+    char platform = 'h'; // h for hackerrank and l for local, read from file 
 
-
+    if (platform == 'h'){
     int count;
     int degree;
     cin >> count;
@@ -308,45 +308,50 @@ int main()
         Info temp;
         cin >> temp.x >> temp.y >> temp.z;
         t.insert(temp);
+        
     }
+    t.traverse();
+    }
+    else {
+        ifstream ip;
+        ip.open("input.txt");
 
-        // ifstream ip;
-        // ip.open("input.txt");
+        BTree t(3);
 
-        // BTree t(3);
+        int count;
+        string _count;
+        string _degree;
+        string _op;
+        int degree;
+        getline(ip, _count);
+        getline(ip, _degree);
+        ip.get(op);
+        count = stod(_count);
+        cout << _count << endl;
+        cout << _degree << endl;
+        cout << op;
+        cout << endl;
+        int x;
+        int y;
+        char dummy;
+        char z;
 
-        // int count;
-        // string _count;
-        // string _degree;
-        // string _op;
-        // int degree;
-        // getline(ip, _count);
-        // getline(ip, _degree);
-        // ip.get(op);
-        // count = stod(_count);
-        // cout << _count << endl;
-        // cout << _degree << endl;
-        // cout << op;
-        // cout << endl;
-        // int x;
-        // int y;
-        // char dummy;
-        // char z;
+        for (int i = 0; i < count; i++)
+        {
+            ip >> x;
+            ip >> y;
+            ip.get(dummy); // space
+            ip.get(z);
+            Info temp;
+            temp.x = x;
+            temp.y = y;
+            temp.z = z;
+            t.insert(temp);
 
-        // for (int i = 0; i < count; i++)
-        // {
-        //     ip >> x;
-        //     ip >> y;
-        //     ip.get(dummy); // space
-        //     ip.get(z);
-        //     Info temp;
-        //     temp.x = x;
-        //     temp.y = y;
-        //     temp.z = z;
-        //     t.insert(temp);
-
-        // }
+        }
         t.traverse();
+    }
+        
 
 
     return 0;
