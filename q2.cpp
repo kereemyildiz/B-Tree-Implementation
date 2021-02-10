@@ -1,3 +1,8 @@
+/*
+Ali Kerem Yildiz
+150170013
+*/
+
 #include <cmath>
 #include <cstdio>
 #include <vector>
@@ -495,7 +500,7 @@ void BTree::remove(Info k)
 }
 int main()
 {
-    char platform = 'l'; // h for hackerrank and l for local, read from file 
+    char platform = 'h'; // h for hackerrank and l for local, read from file 
 
     if (platform == 'h'){
     int count;
@@ -512,36 +517,38 @@ int main()
         t.insert(temp);
     }
 
-    char del_key;
-    cin >> del_key;
+
     Info toBeDeleted;
     if (op == 'x'){
-        int del_key_x = del_key - '0';
-        int i = 0;
-        while(infos[i].x != del_key_x)
-            i++;
-        toBeDeleted = infos[i];
-    }
-    if (op == 'y'){
-        int del_key_y = del_key - '0';
-        int i = 0;
-        while(infos[i].x != del_key_y)
-            i++;
-        toBeDeleted = infos[i];
-    }
-    if (op == 'z'){
+        int del_key;
+        cin >> del_key;
         int i = 0;
         while(infos[i].x != del_key)
             i++;
         toBeDeleted = infos[i];
     }
-
+    if (op == 'y'){
+        int del_key;
+        cin >> del_key;
+        int i = 0;
+        while(infos[i].y != del_key)
+            i++;
+        toBeDeleted = infos[i];
+    }
+    if (op == 'z'){
+        char del_key;
+        cin >> del_key;
+        int i = 0;
+        while(infos[i].z != del_key)
+            i++;
+        toBeDeleted = infos[i];
+    }
     t.remove(toBeDeleted);
     t.traverse();
     }
     else {
         ifstream ip;
-        ip.open("input2.txt");
+        ip.open("input.txt");
 
         BTree t(3);
 
@@ -577,28 +584,24 @@ int main()
             infos.push_back(temp);
 
         }
-
+        char del_key;
+        ip >> del_key;
         Info toBeDeleted;
         if (op == 'x'){
-            int del_key_x;
-            ip >> del_key_x;
+            int del_key_x = del_key - '0';
             int i = 0;
             while(infos[i].x != del_key_x)
                 i++;
             toBeDeleted = infos[i];
         }
         if (op == 'y'){
-            int del_key_y;
-            ip >> del_key_y;
+            int del_key_y = del_key - '0';
             int i = 0;
             while(infos[i].y != del_key_y)
                 i++;
             toBeDeleted = infos[i];
         }
         if (op == 'z'){
-            char del_key;
-            ip >> del_key;
-            cout << "del_key : " << del_key;
             int i = 0;
             while(infos[i].z != del_key)
                 i++;
