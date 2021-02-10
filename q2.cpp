@@ -79,22 +79,21 @@ public:
 
 
     void insertNotFull(Info k); // when node is not full we call this func
-    void split(int i, B_Tree_Node *y);
+    void split(int i, B_Tree_Node *);
     void traverse();
 
-    int getKey(Info k);
+    int getKeyIndex(Info k);
     void remove(Info k);
     void removeFromLeaf(int index);
     void removeFromNotLeaf(int index);
     Info getLeftNearestChild(int index);
     Info getRightNearestChild(int index);
     void load(int index);
-    void borrowFromPrev(int index);
-    void borrowFromNext(int index);
-    void merge(int index);
+    void takeElementFromPrev(int index);
+    void takeElementFromNext(int index);
 
 };
-int B_Tree_Node::getKey(Info k)
+int B_Tree_Node::getKeyIndex(Info k)
 {
     int index = 0;
     while(keys[index] < k)
@@ -106,24 +105,19 @@ int B_Tree_Node::getKey(Info k)
 
 void B_Tree_Node::remove(Info k)
 {
-    int index = getKey(k);
+    int index = getKeyIndex(k);
 
     if (index < key_num && keys[index] == k)
-    {    
-        if(leaf){
-        removeFromLeaf(index);
-        }
-    else {
-        removeFromNotLeaf(index);
-        }
-    }
-    else{
-        bool flag = ((index == key_num) ? true : false);
+    {
 
+        (leaf == false) ? removeFromNotLeaf(index) : removeFromLeaf(index);
+    }
+    else
+    {
         if (chs[index]->key_num < t){
             load(index);
         }
-        if (flag && index > key_num) {
+        if (index == key_num && index > key_num) {
             chs[index - 1]->remove(k);
         }
         else{
@@ -132,41 +126,84 @@ void B_Tree_Node::remove(Info k)
     }
     return;
 }
-void B_Tree_Node::removeFromLeaf(int index) {
-    for (int i = index + 1; i < key_num; ++i)
+void B_Tree_Node::removeFromLeaf(int index) { // case 1 in pseudecode
+    for (int i = index + 1; i < key_num; i++)
         keys[i - 1] = keys[i];
 
     key_num--;
 
     return;
 }
-
-void B_Tree_Node::removeFromNotLeaf(int index)
+void mergeNodes(int index, B_Tree_Node* n)
 {
-    Info k = keys[index];
+    B_Tree_Node *c = n->chs[index];
+    B_Tree_Node *s = n->chs[index + 1];
 
-    if (chs[index]->key_num >= t) {
-        Info pred = getLeftNearestChild(index);
-        keys[index] = pred;
-        chs[index]->remove(pred);
+    c->keys[n->t - 1] = n->keys[index];
+
+    if (c->leaf == false) {
+        for (int i = 0; i < s->key_num+1; i++){
+            c->chs[i + n->t] = s->chs[i];
+        }
     }
 
-    else if (chs[index + 1]->key_num >= t) {
-        Info succ = getRightNearestChild(index);
-        keys[index] = succ;
-        chs[index + 1]->remove(succ);
+
+    for (int i = 0; i < s->key_num; i++){
+        c->keys[i + n->t] = s->keys[i];
+    }
+
+
+    for (int i = index + 1; i < n->key_num; i++){
+        n->keys[i - 1] = n->keys[i];
+    } 
+
+    for (int i = index + 1 + 1; i < n->key_num +1; i++){
+        n->chs[i - 1] = n->chs[i];
+    } 
+
+    c->key_num += s->key_num + 1;
+    n->key_num--;
+
+    delete (s);
+    return;
+}
+/*
+
+Case 1: key k is in a leaf node  
+Case 2: key k is in an internal node 
+    –Subcase a: having a child with at least t keys preceding k
+    –Subcase b: having a child with at least t keys following k  
+    –Subcase c: both have t-1 keys 
+Case 3: key k is not in an internal node and root of an appropriate subtree has only t-1 keys 
+    –Subcase a: subtree has only t-1 keys having a sibling with at least t keys 
+    –Subcase b: both subtree and immediate siblings have t-1 keys 
+*/
+void B_Tree_Node::removeFromNotLeaf(int index) // case 2 in pseudecode
+{
+    Info _k1 = keys[index];
+
+    if (chs[index]->key_num > t-1) { // nearest from left 
+        Info leftChild = getLeftNearestChild(index);
+        keys[index] = leftChild;
+        chs[index]->remove(leftChild);
+    }
+
+    else if (chs[index + 1]->key_num > t-1) { // nearest from right
+        Info rightChild = getRightNearestChild(index);
+        keys[index] = rightChild;
+        chs[index + 1]->remove(rightChild);
     }
 
     else {
-        merge(index);
-        chs[index]->remove(k);
+        mergeNodes(index,this);
+        chs[index]->remove(_k1);
     }
     return;    
 }
 Info B_Tree_Node::getLeftNearestChild(int index){
     B_Tree_Node *temp = chs[index];
     while(temp->leaf == false){
-        temp = temp->chs[temp->key_num];
+        temp = temp->chs[temp->key_num]; // iterate over chs 
     }
 
     return temp->keys[temp->key_num-1];
@@ -182,100 +219,78 @@ Info B_Tree_Node::getRightNearestChild(int index){
 
 void B_Tree_Node::load(int index)
 {
-    if (index != 0 && chs[index - 1]->key_num >= t)
-    borrowFromPrev(index);
 
-    else if (index != key_num && chs[index + 1]->key_num >= t)
-    borrowFromNext(index);
+    if (index != key_num && chs[index + 1]->key_num > t-1)
+        takeElementFromNext(index);
+
+    else if (index != 0 && chs[index - 1]->key_num > t-1)
+        takeElementFromPrev(index);
 
     else {
-        if (index != key_num)
-            merge(index);
+        if (index == key_num)
+            mergeNodes(index - 1,this);
         else
-            merge(index - 1);
+            mergeNodes(index,this);
     }
     return;
 }
 
-void B_Tree_Node::borrowFromPrev(int index)
+void B_Tree_Node::takeElementFromPrev(int index)
 {
-    B_Tree_Node *child = chs[index];
-    B_Tree_Node *sibling = chs[index - 1];
+    int j = index - 1;
+    B_Tree_Node *c = chs[index];
+    B_Tree_Node *s = chs[j];
 
-    for (int i = child->key_num - 1; i >= 0; --i)
-    child->keys[i + 1] = child->keys[i];
+    for (int i = c->key_num - 1; i >= 0; --i)
+        c->keys[i + 1] = c->keys[i];
 
-    if (!child->leaf) {
-    for (int i = child->key_num; i >= 0; --i)
-        child->chs[i + 1] = child->chs[i];
+    if (c->leaf == false) {
+        for (int i = c->key_num; i >= 0; --i)
+            c->chs[i + 1] = c->chs[i];
     }
 
-    child->keys[0] = keys[index - 1];
+    c->keys[0] = keys[j];
 
-    if (!child->leaf)
-    child->chs[0] = sibling->chs[sibling->key_num];
+    if (c->leaf == false){
+        c->chs[0] = s->chs[s->key_num];
+    }
+    keys[j] = s->keys[s->key_num - 1];
 
-    keys[index - 1] = sibling->keys[sibling->key_num - 1];
-
-    child->key_num += 1;
-    sibling->key_num -= 1;
+    c->key_num++;
+    s->key_num--;
 
     return;
 }
-void B_Tree_Node::borrowFromNext(int index)
+void B_Tree_Node::takeElementFromNext(int index)
 {
-    B_Tree_Node *child = chs[index];
-    B_Tree_Node *sibling = chs[index + 1];
+    B_Tree_Node *c = chs[index];
+    B_Tree_Node *s = chs[index + 1];
 
-    child->keys[(child->key_num)] = keys[index];
+    c->keys[(c->key_num)] = keys[index];
 
-    if (!(child->leaf))
-        child->chs[(child->key_num) + 1] = sibling->chs[0];
+    if (c->leaf == false)
+        c->chs[(c->key_num) + 1] = s->chs[0];
 
-    keys[index] = sibling->keys[0];
+    keys[index] = s->keys[0];
 
-    for (int i = 1; i < sibling->key_num; ++i)
-        sibling->keys[i - 1] = sibling->keys[i];
+    for (int i = 1; i < s->key_num; ++i)
+        s->keys[i - 1] = s->keys[i];
 
-    if (!sibling->leaf) {
-        for (int i = 1; i <= sibling->key_num; ++i)
-            sibling->chs[i - 1] = sibling->chs[i];
+    if (s->leaf == false) {
+        for (int i = 1; i <= s->key_num; ++i)
+        {
+            s->chs[i - 1] = s->chs[i];
         }
+    }
 
-    child->key_num += 1;
-    sibling->key_num -= 1;
+    c->key_num += 1;
+    s->key_num -= 1;
 
     return;
     
 }
 
-void B_Tree_Node::merge(int index)
-{
-    B_Tree_Node *child = chs[index];
-    B_Tree_Node *sibling = chs[index + 1];
 
-    child->keys[t - 1] = keys[index];
-
-    for (int i = 0; i < sibling->key_num; ++i)
-        child->keys[i + t] = sibling->keys[i];
-
-    if (!child->leaf) {
-        for (int i = 0; i <= sibling->key_num; ++i)
-        child->chs[i + t] = sibling->chs[i];
-    }
-
-    for (int i = index + 1; i < key_num; ++i)
-        keys[i - 1] = keys[i];
-
-    for (int i = index + 2; i <= key_num; ++i)
-        chs[i - 1] = chs[i];
-
-    child->key_num += sibling->key_num + 1;
-    key_num--;
-
-    delete (sibling);
-    return;
-}
 class BTree
 {
 
