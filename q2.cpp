@@ -74,14 +74,203 @@ public:
 
 
     void insertNotFull(Info k); // when node is not full we call this func
-
     void split(int i, B_Tree_Node *y);
-
     void traverse();
 
+    int getKey(Info k);
+    void remove(Info k);
+    void removeFromLeaf(int index);
+    void removeFromNotLeaf(int index);
+    Info getLeftNearestChild(int index);
+    Info getRightNearestChild(int index);
+    void load(int index);
+    void borrowFromPrev(int index);
+    void borrowFromNext(int index);
+    void merge(int index);
+
 };
+int B_Tree_Node::getKey(Info k)
+{
+    int index = 0;
+    while(keys[index] < k)
+    {
+        ++index;
+    }
+    return index;
+}
 
+void B_Tree_Node::remove(Info k)
+{
+    int index = getKey(k);
 
+    if (index < key_num && keys[index] == k)
+    {    
+        if(leaf){
+        removeFromLeaf(index);
+        }
+    else {
+        removeFromNotLeaf(index);
+        }
+    }
+    else{
+        bool flag = ((index == key_num) ? true : false);
+
+        if (chs[index]->key_num < t){
+            load(index);
+        }
+        if (flag && index > key_num) {
+            chs[index - 1]->remove(k);
+        }
+        else{
+            chs[index]->remove(k);
+        }
+    }
+    return;
+}
+void B_Tree_Node::removeFromLeaf(int index) {
+    for (int i = index + 1; i < key_num; ++i)
+        keys[i - 1] = keys[i];
+
+    key_num--;
+
+    return;
+}
+
+void B_Tree_Node::removeFromNotLeaf(int index)
+{
+    Info k = keys[index];
+
+    if (chs[index]->key_num >= t) {
+        Info pred = getLeftNearestChild(index);
+        keys[index] = pred;
+        chs[index]->remove(pred);
+    }
+
+    else if (chs[index + 1]->key_num >= t) {
+        Info succ = getRightNearestChild(index);
+        keys[index] = succ;
+        chs[index + 1]->remove(succ);
+    }
+
+    else {
+        merge(index);
+        chs[index]->remove(k);
+    }
+    return;    
+}
+Info B_Tree_Node::getLeftNearestChild(int index){
+    B_Tree_Node *temp = chs[index];
+    while(temp->leaf == false){
+        temp = temp->chs[temp->key_num];
+    }
+
+    return temp->keys[temp->key_num-1];
+}
+Info B_Tree_Node::getRightNearestChild(int index){
+    B_Tree_Node *temp = chs[index+1];
+    while(temp->leaf == false){
+        temp = temp->chs[0];
+    }
+
+    return temp->keys[0];
+}
+
+void B_Tree_Node::load(int index)
+{
+    if (index != 0 && chs[index - 1]->key_num >= t)
+    borrowFromPrev(index);
+
+    else if (index != key_num && chs[index + 1]->key_num >= t)
+    borrowFromNext(index);
+
+    else {
+        if (index != key_num)
+            merge(index);
+        else
+            merge(index - 1);
+    }
+    return;
+}
+
+void B_Tree_Node::borrowFromPrev(int index)
+{
+    B_Tree_Node *child = chs[index];
+    B_Tree_Node *sibling = chs[index - 1];
+
+    for (int i = child->key_num - 1; i >= 0; --i)
+    child->keys[i + 1] = child->keys[i];
+
+    if (!child->leaf) {
+    for (int i = child->key_num; i >= 0; --i)
+        child->chs[i + 1] = child->chs[i];
+    }
+
+    child->keys[0] = keys[index - 1];
+
+    if (!child->leaf)
+    child->chs[0] = sibling->chs[sibling->key_num];
+
+    keys[index - 1] = sibling->keys[sibling->key_num - 1];
+
+    child->key_num += 1;
+    sibling->key_num -= 1;
+
+    return;
+}
+void B_Tree_Node::borrowFromNext(int index)
+{
+    B_Tree_Node *child = chs[index];
+    B_Tree_Node *sibling = chs[index + 1];
+
+    child->keys[(child->key_num)] = keys[index];
+
+    if (!(child->leaf))
+        child->chs[(child->key_num) + 1] = sibling->chs[0];
+
+    keys[index] = sibling->keys[0];
+
+    for (int i = 1; i < sibling->key_num; ++i)
+        sibling->keys[i - 1] = sibling->keys[i];
+
+    if (!sibling->leaf) {
+        for (int i = 1; i <= sibling->key_num; ++i)
+            sibling->chs[i - 1] = sibling->chs[i];
+        }
+
+    child->key_num += 1;
+    sibling->key_num -= 1;
+
+    return;
+    
+}
+
+void B_Tree_Node::merge(int index)
+{
+    B_Tree_Node *child = chs[index];
+    B_Tree_Node *sibling = chs[index + 1];
+
+    child->keys[t - 1] = keys[index];
+
+    for (int i = 0; i < sibling->key_num; ++i)
+        child->keys[i + t] = sibling->keys[i];
+
+    if (!child->leaf) {
+        for (int i = 0; i <= sibling->key_num; ++i)
+        child->chs[i + t] = sibling->chs[i];
+    }
+
+    for (int i = index + 1; i < key_num; ++i)
+        keys[i - 1] = keys[i];
+
+    for (int i = index + 2; i <= key_num; ++i)
+        chs[i - 1] = chs[i];
+
+    child->key_num += sibling->key_num + 1;
+    key_num--;
+
+    delete (sibling);
+    return;
+}
 class BTree
 {
 
@@ -96,9 +285,8 @@ public:
     void traverse()
     { if (root != NULL) root->traverse(); }
 
-
-
     void insert(Info k);
+    void remove(Info k);
 };
 
 
@@ -291,10 +479,23 @@ void B_Tree_Node::split(int i, B_Tree_Node *fullnode)
 
     key_num = key_num + 1;
 }
+void BTree::remove(Info k)
+{
+    root->remove(k);
 
+    if(root->key_num == 0) {
+        B_Tree_Node *temp = root;
+        if(root->leaf)
+            root = NULL;
+        else
+            root = root->chs[0];
+        delete temp;
+    }
+    return;
+}
 int main()
 {
-    char platform = 'a'; // h for hackerrank and l for local, read from file 
+    char platform = 'l'; // h for hackerrank and l for local, read from file 
 
     if (platform == 'h'){
     int count;
@@ -302,19 +503,45 @@ int main()
     cin >> count;
     cin >> degree;
     cin >> op;
-
+    vector<Info> infos;
     BTree t(degree);
     for (int i = 0; i < count; i++){
         Info temp;
         cin >> temp.x >> temp.y >> temp.z;
+        infos.push_back(temp);
         t.insert(temp);
-        
     }
+
+    char del_key;
+    cin >> del_key;
+    Info toBeDeleted;
+    if (op == 'x'){
+        int del_key_x = del_key - '0';
+        int i = 0;
+        while(infos[i].x != del_key_x)
+            i++;
+        toBeDeleted = infos[i];
+    }
+    if (op == 'y'){
+        int del_key_y = del_key - '0';
+        int i = 0;
+        while(infos[i].x != del_key_y)
+            i++;
+        toBeDeleted = infos[i];
+    }
+    if (op == 'z'){
+        int i = 0;
+        while(infos[i].x != del_key)
+            i++;
+        toBeDeleted = infos[i];
+    }
+
+    t.remove(toBeDeleted);
     t.traverse();
     }
     else {
         ifstream ip;
-        ip.open("input.txt");
+        ip.open("input2.txt");
 
         BTree t(3);
 
@@ -334,6 +561,7 @@ int main()
         int y;
         char dummy;
         char z;
+        vector<Info> infos;
 
         for (int i = 0; i < count; i++)
         {
@@ -346,12 +574,39 @@ int main()
             temp.y = y;
             temp.z = z;
             t.insert(temp);
+            infos.push_back(temp);
 
         }
+
+        Info toBeDeleted;
+        if (op == 'x'){
+            int del_key_x;
+            ip >> del_key_x;
+            int i = 0;
+            while(infos[i].x != del_key_x)
+                i++;
+            toBeDeleted = infos[i];
+        }
+        if (op == 'y'){
+            int del_key_y;
+            ip >> del_key_y;
+            int i = 0;
+            while(infos[i].y != del_key_y)
+                i++;
+            toBeDeleted = infos[i];
+        }
+        if (op == 'z'){
+            char del_key;
+            ip >> del_key;
+            cout << "del_key : " << del_key;
+            int i = 0;
+            while(infos[i].z != del_key)
+                i++;
+            toBeDeleted = infos[i];
+        }
+        t.remove(toBeDeleted);
         t.traverse();
-    }
+        }
         
-
-
     return 0;
 }
