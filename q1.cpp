@@ -135,13 +135,13 @@ void B_Tree_Node::traverse()
 /*
 
 B-TREE-INSERT(T,k)
-1  r ← root[T]
-2  if n[r] = 2t - 1⊳if root is full, add a new layer
-3       thens←ALLOCATE-NODE()
-4               root[T] ← s
-5               leaf[s] ← FALSE
-6               n[s] ← 0
-7               c1[s]← r
+1  r <- root[T]
+2  if n[r] = 2t - 1 if root is full, add a new layer
+3       thens<-ALLOCATE-NODE()
+4               root[T] <- s
+5               leaf[s] <- FALSE
+6               n[s] <- 0
+7               c1[s]<- r
 8               B-TREE-SPLIT-CHILD(s,1,r)
 9               B-TREE-INSERT-NONFULL(s,k)
 10 elseB-Tree-INSERT-NONFULL(r,k)
@@ -186,22 +186,22 @@ void BTree::insert(Info k)
 
 /*
 B-TREE-INSERT-NONFULL(x,k)  
-1   i ← n[x]  
+1   i <- n[x]  
 2   if leaf[x]  
-3       then while i≥ 1 and k < keyi[x]  
-4                      do keyi+1[x]← keyi[x]  
-5                            i ← i -1  
-6                keyi+1[x] ← k 
-7                n[x]←n[x]+1   
+3       then while i>= 1 and k < keyi[x]  
+4                      do keyi+1[x]<- keyi[x]  
+5                            i <- i -1  
+6                keyi+1[x] <- k 
+7                n[x]<-n[x]+1   
 8                DISK-WRITE(x)  
-9       else while i ≥ 1 and k < keyi[x]
-10                     do i ← i - 1 
-11                i ← i + 1 
+9       else while i >= 1 and k < keyi[x]
+10                     do i <- i - 1 
+11                i <- i + 1 
 12               DISK-READ(ci[x]) 
 13               if n[ci[x]] = 2t-1 
 14                    then B-TREE-SPLIT-CHILD(x,i,ci[x]) 
 15                         if k > keyi[x]  
-16                             then i ←i + 1 
+16                             then i <-i + 1 
 17               B-TREE-INSERT-NONFULL(ci[x],k)
 */
 void B_Tree_Node::insert2(Info k)
@@ -238,22 +238,22 @@ void B_Tree_Node::insert2(Info k)
 }
 
 /*
-B-TREE-SPLIT-CHILD(x,i,y)  1z←Allocate_Node 
-2   leaf[z] ← leaf[y]  
-3   n[z] ← t - 1  
-4   for j ← 1 to t - 1  
-5        dokeyj[z]← keyj+t[y]  
+B-TREE-SPLIT-CHILD(x,i,y)  1z<-Allocate_Node 
+2   leaf[z] <- leaf[y]  
+3   n[z] <- t - 1  
+4   for j <- 1 to t - 1  
+5        dokeyj[z]<- keyj+t[y]  
 6   if not leaf[y]  
-7        then for j ← 1 to t  
-8              do cj[z] ← cj+t[y] 
-9   n[y]← t-1  
-10  for j← n[x]+1 downto i+1 
-11        do cj+1[x] ← cj[x] 
-12   ci+1[x] ← z 
-13   for j ←n[x] downto i 
-14        do keyj+1[x] ← keyj[x] 
-15   keyi[x] ← keyt[y] 
-16   n[x]←n[x]+1
+7        then for j <- 1 to t  
+8              do cj[z] <- cj+t[y] 
+9   n[y]<- t-1  
+10  for j<- n[x]+1 downto i+1 
+11        do cj+1[x] <- cj[x] 
+12   ci+1[x] <- z 
+13   for j <-n[x] downto i 
+14        do keyj+1[x] <- keyj[x] 
+15   keyi[x] <- keyt[y] 
+16   n[x]<-n[x]+1
 */
 void B_Tree_Node::split(int i, B_Tree_Node *fullnode)
 {
@@ -322,7 +322,6 @@ int main()
         string _count;
         string _degree;
         string _op;
-        int degree;
         getline(ip, _count);
         getline(ip, _degree);
         ip.get(op);
