@@ -1,0 +1,14 @@
+1- In normal B-Trees, time complexity depends on degree and number of nodes.
+Thus, actually it depends on height of the tree. O(th) = O(tlog(_t) n).
+In this example, different keys creates some kind of 3-different tree (not different
+but, kind of) which means they can be different heights according to inputs.
+For each insert operation we may traverse different heighs O(t*hx), O(t*hy), O(t*hz)
+and it gives us 3*O(logn) that means O(logn), all of them depends on number of nodes and height.
+
+2-.Finding standart deviation is O(1). After finding the correct node which contains mini B-Tree, inserting
+that node into mini B-Tree is O(log n) where n is the number of mini B Tree node. Finding the correct node also
+takes O(log m). 
+
+
+Ali Kerem Yıldız
+150170013

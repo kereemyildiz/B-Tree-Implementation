@@ -1,3 +1,8 @@
+/*
+Ali Kerem Yildiz
+150170013
+*/
+
 #include <cmath>
 #include <cstdio>
 #include <vector>
@@ -294,7 +299,7 @@ void B_Tree_Node::split(int i, B_Tree_Node *fullnode)
 
 int main()
 {
-    char platform = 'a'; // h for hackerrank and l for local, read from file 
+    char platform = 'h'; // h for hackerrank and l for local, read from file 
 
     if (platform == 'h'){
     int count;
